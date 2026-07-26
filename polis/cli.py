@@ -53,10 +53,13 @@ def _find_polis_root(start=None):
 
 def cmd_status(argv):
     import argparse
+    import json
 
     ap = argparse.ArgumentParser(prog="polis status")
     ap.add_argument("--polis-root", default=None,
                     help="Path to _polis/ (default: auto-detect from cwd)")
+    ap.add_argument("--json", action="store_true",
+                    help="Print status as deterministic JSON")
     args = ap.parse_args(argv)
 
     from . import routing
@@ -71,6 +74,25 @@ def cmd_status(argv):
     settled_dir = root / "contracts" / "settled"
     n_open = len(list(open_dir.glob("*.md"))) if open_dir.exists() else 0
     n_settled = len(list(settled_dir.glob("*.md"))) if settled_dir.exists() else 0
+    tags = stats.get("tags", {})
+
+    if args.json:
+        payload = {
+            "polis_root": str(root),
+            "citizens": sorted(citizens),
+            "open_contracts": n_open,
+            "settled_contracts": n_settled,
+            "explore_rate": stats.get("explore_rate", 0.15),
+            "routing_by_tag": {
+                tag: {
+                    "leader": ts.get("leader"),
+                    "leader_confidence": ts.get("leader_confidence", 0.0),
+                }
+                for tag, ts in sorted(tags.items())
+            },
+        }
+        print(json.dumps(payload, sort_keys=True))
+        return 0
 
     print(f"polis: {root}")
     print(f"  citizens          : {len(citizens)}")
@@ -79,7 +101,6 @@ def cmd_status(argv):
     print(f"  open contracts    : {n_open}")
     print(f"  settled contracts : {n_settled}")
     print(f"  explore_rate      : {stats.get('explore_rate', 0.15)}")
-    tags = stats.get("tags", {})
     if tags:
         print("  routing by tag (leader / confidence):")
         for tag, ts in sorted(tags.items()):

@@ -85,6 +85,9 @@ jobs:
       - name: Run python -m polis entry-point test
         run: python3 scripts/test_module_main.py
 
+      - name: Run status JSON test
+        run: python3 scripts/test_status_json.py
+
       - name: Run extension thin-client state test (node)
         run: node editors/antigravity/test_state.js
 
