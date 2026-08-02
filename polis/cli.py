@@ -11,7 +11,7 @@ from pathlib import Path
 
 from . import __version__
 
-USAGE = """polis {v} — local-first control plane for coding agents
+USAGE = """polis {v} - local-first control plane for coding agents
 
 usage: polis <command> [options]
 
@@ -21,7 +21,7 @@ commands:
   reconcile   Rebuild routing_stats.yml from settled contracts
   contract    Manage contracts: open | list | claim | settle | abandon | show | context
   bench       Polis Bench (--mode routing|learning): proof, measured honestly
-  serve       Local control-plane dashboard — view + open/claim/settle/reserve (http://127.0.0.1:7341)
+  serve       Local control-plane dashboard - view + open/claim/settle/reserve (http://127.0.0.1:7341)
   mcp         Serve the polis lifecycle as an MCP server (stdio) for any agent
   report      Write a shareable Polis Replay (--format md|html, --redact)
   reflect     Mine settled history for pathologies; draft evidence-backed amendments (--apply)
@@ -104,7 +104,7 @@ def cmd_status(argv):
     if tags:
         print("  routing by tag (leader / confidence):")
         for tag, ts in sorted(tags.items()):
-            leader = ts.get("leader", "—")
+            leader = ts.get("leader", "-")
             conf = ts.get("leader_confidence", 0.0)
             try:
                 conf_s = f"{float(conf):.2f}"
@@ -192,10 +192,10 @@ def cmd_verify(argv):
         if state == "ok":
             print(f"  ok     {cid}")
         elif state == "mismatch":
-            print(f"  CHANGED {cid}: content_hash does not match — card edited since stamped")
+            print(f"  CHANGED {cid}: content_hash does not match - card edited since stamped")
             bad += 1
         elif state == "legacy":
-            print(f"  legacy {cid}: old signature field — run `polis verify --fix` to migrate")
+            print(f"  legacy {cid}: old signature field - run `polis verify --fix` to migrate")
         else:
             print(f"  unstamped {cid}: run `polis verify --fix` to add a content_hash")
 
@@ -250,7 +250,7 @@ def cmd_migrate(argv):
         print("Undo with: polis migrate --rollback")
         return 0
 
-    print("Planned migration (dry run — re-run with --apply):")
+    print("Planned migration (dry run - re-run with --apply):")
     for action in actions:
         print(f"  {action['action']}: {action['detail']}")
     return 0
@@ -302,12 +302,12 @@ def cmd_reflect(argv):
         kwargs["min_evidence"] = a.min_evidence
     results = _reflect.reflect(root, **kwargs)
     if not results:
-        print("No process pathologies found — nothing to propose.")
+        print("No process pathologies found - nothing to propose.")
         return 0
     verb = "Proposed" if a.apply else "Would propose"
     for r in results:
         if a.apply and r["already_proposed"]:
-            print(f"  · already on file: {r['amendment_id']} ({r['kind']})")
+            print(f"  - already on file: {r['amendment_id']} ({r['kind']})")
             continue
         mark = "+" if (a.apply and r["written"]) else "?"
         print(f"  {mark} {verb}: {r['title']}")
@@ -347,7 +347,7 @@ def cmd_guardrail(argv):
             print("No guardrails yet.")
             return 0
         for g in gs:
-            print(f"  ⚠️ {g['text']}  [{', '.join(g['tags'])}]")
+            print(f"  ! {g['text']}  [{', '.join(g['tags'])}]")
         return 0
 
     print("usage: polis guardrail <add|list> [...]")
@@ -405,7 +405,7 @@ def cmd_contract(argv):
             print(f"No {a.state} contracts.")
             return 0
         for r in rows:
-            owner = r["owner"] or "—"
+            owner = r["owner"] or "-"
             print(f"  {r['contract_id']:32s} [{r['status']:9s}] owner={owner}  {r['title']}")
         return 0
 
@@ -499,9 +499,9 @@ def cmd_reserve(argv):
     from . import reservations
     res = reservations.reserve(root, args.citizen, args.paths, ttl_minutes=args.ttl_min, note=args.note)
     if not res["ok"]:
-        print("Reservation REJECTED — these paths are held by other citizens:")
+        print("Reservation REJECTED - these paths are held by other citizens:")
         for c in res["conflicts"]:
-            print(f"  {c['path']}  ← held by {c['holder']} (as {c['held_path']})")
+            print(f"  {c['path']}  <- held by {c['holder']} (as {c['held_path']})")
         return 1
     ttl = f", expires in {args.ttl_min}m" if args.ttl_min else ""
     print(f"Reserved {len(res['reservation']['paths'])} path(s) for {args.citizen}{ttl}.")
@@ -546,7 +546,7 @@ def cmd_reservations(argv):
     print("Active reservations:")
     for res in active:
         exp = res.get("expires_at") or "no expiry"
-        note = f"  — {res['note']}" if res.get("note") else ""
+        note = f"  - {res['note']}" if res.get("note") else ""
         print(f"  {res.get('citizen')}: {', '.join(res.get('paths', []))}  (expires: {exp}){note}")
     return 0
 
@@ -625,7 +625,29 @@ def _delegate(module_name, argv, prepend=None):
         sys.argv = saved
 
 
+def _soften_stream_encoding_errors():
+    """Degrade unencodable output characters instead of crashing on them.
+
+    When stdout/stderr is not UTF-8 — a POSIX/C locale, a Windows code page,
+    an explicit ``PYTHONIOENCODING=ascii``, some CI log capturers — printing a
+    character the stream cannot encode raises ``UnicodeEncodeError`` and the
+    command dies with a traceback. A replacement marker is always the better
+    outcome for a CLI, so ask both streams for ``errors="replace"`` up front.
+
+    ``reconfigure`` is a ``TextIOWrapper`` method (3.7+, so present on every
+    Python this project supports), but a caller may have swapped in a stream
+    object of its own — a ``StringIO`` in a test harness, say — that has no
+    such method. That is not an error: there is simply nothing to soften.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except AttributeError:
+            pass
+
+
 def main(argv=None):
+    _soften_stream_encoding_errors()
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv or argv[0] in ("-h", "--help", "help"):
         print(USAGE)
