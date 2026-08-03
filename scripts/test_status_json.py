@@ -31,7 +31,12 @@ def _write_card(root: Path, agent_id: str):
 class StatusJsonTest(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
-        self.root = Path(self._tmp.name) / "_polis"
+        # .resolve() because the CLI resolves --polis-root before echoing it
+        # back, and on macOS the tempdir sits under /var, a symlink to
+        # /private/var. Without this the expected and actual paths differ by
+        # that prefix and every path assertion below fails locally while
+        # passing on Linux CI.
+        self.root = Path(self._tmp.name).resolve() / "_polis"
         _make_empty_polis(self.root)
 
     def tearDown(self):
