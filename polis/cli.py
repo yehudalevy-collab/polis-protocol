@@ -104,7 +104,7 @@ def cmd_status(argv):
     if tags:
         print("  routing by tag (leader / confidence):")
         for tag, ts in sorted(tags.items()):
-            leader = ts.get("leader", "-")
+            leader = ts.get("leader", "—")
             conf = ts.get("leader_confidence", 0.0)
             try:
                 conf_s = f"{float(conf):.2f}"
@@ -192,10 +192,10 @@ def cmd_verify(argv):
         if state == "ok":
             print(f"  ok     {cid}")
         elif state == "mismatch":
-            print(f"  CHANGED {cid}: content_hash does not match - card edited since stamped")
+            print(f"  CHANGED {cid}: content_hash does not match — card edited since stamped")
             bad += 1
         elif state == "legacy":
-            print(f"  legacy {cid}: old signature field - run `polis verify --fix` to migrate")
+            print(f"  legacy {cid}: old signature field — run `polis verify --fix` to migrate")
         else:
             print(f"  unstamped {cid}: run `polis verify --fix` to add a content_hash")
 
@@ -250,7 +250,7 @@ def cmd_migrate(argv):
         print("Undo with: polis migrate --rollback")
         return 0
 
-    print("Planned migration (dry run - re-run with --apply):")
+    print("Planned migration (dry run — re-run with --apply):")
     for action in actions:
         print(f"  {action['action']}: {action['detail']}")
     return 0
@@ -302,12 +302,12 @@ def cmd_reflect(argv):
         kwargs["min_evidence"] = a.min_evidence
     results = _reflect.reflect(root, **kwargs)
     if not results:
-        print("No process pathologies found - nothing to propose.")
+        print("No process pathologies found — nothing to propose.")
         return 0
     verb = "Proposed" if a.apply else "Would propose"
     for r in results:
         if a.apply and r["already_proposed"]:
-            print(f"  - already on file: {r['amendment_id']} ({r['kind']})")
+            print(f"  · already on file: {r['amendment_id']} ({r['kind']})")
             continue
         mark = "+" if (a.apply and r["written"]) else "?"
         print(f"  {mark} {verb}: {r['title']}")
@@ -347,7 +347,7 @@ def cmd_guardrail(argv):
             print("No guardrails yet.")
             return 0
         for g in gs:
-            print(f"  ! {g['text']}  [{', '.join(g['tags'])}]")
+            print(f"  ⚠️ {g['text']}  [{', '.join(g['tags'])}]")
         return 0
 
     print("usage: polis guardrail <add|list> [...]")
@@ -405,7 +405,7 @@ def cmd_contract(argv):
             print(f"No {a.state} contracts.")
             return 0
         for r in rows:
-            owner = r["owner"] or "-"
+            owner = r["owner"] or "—"
             print(f"  {r['contract_id']:32s} [{r['status']:9s}] owner={owner}  {r['title']}")
         return 0
 
@@ -499,9 +499,9 @@ def cmd_reserve(argv):
     from . import reservations
     res = reservations.reserve(root, args.citizen, args.paths, ttl_minutes=args.ttl_min, note=args.note)
     if not res["ok"]:
-        print("Reservation REJECTED - these paths are held by other citizens:")
+        print("Reservation REJECTED — these paths are held by other citizens:")
         for c in res["conflicts"]:
-            print(f"  {c['path']}  <- held by {c['holder']} (as {c['held_path']})")
+            print(f"  {c['path']}  ← held by {c['holder']} (as {c['held_path']})")
         return 1
     ttl = f", expires in {args.ttl_min}m" if args.ttl_min else ""
     print(f"Reserved {len(res['reservation']['paths'])} path(s) for {args.citizen}{ttl}.")
@@ -546,7 +546,7 @@ def cmd_reservations(argv):
     print("Active reservations:")
     for res in active:
         exp = res.get("expires_at") or "no expiry"
-        note = f"  - {res['note']}" if res.get("note") else ""
+        note = f"  — {res['note']}" if res.get("note") else ""
         print(f"  {res.get('citizen')}: {', '.join(res.get('paths', []))}  (expires: {exp}){note}")
     return 0
 
