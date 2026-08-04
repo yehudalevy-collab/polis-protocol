@@ -32,61 +32,11 @@ jobs:
       - name: Install PyYAML
         run: python -m pip install PyYAML==6.0.3
 
-      - name: Run reconcile parser tests
-        run: python3 scripts/test_reconcile_parsing.py
-
-      - name: Run lessons-routing regression test
-        run: python3 scripts/test_lessons_routing.py
-
-      - name: Run doctor + config test
-        run: python3 scripts/test_doctor.py
-
-      - name: Run content-integrity test
-        run: python3 scripts/test_integrity.py
-
-      - name: Run migrate (plan/apply/rollback) test
-        run: python3 scripts/test_migrate.py
-
-      - name: Run file-reservations test
-        run: python3 scripts/test_reservations.py
-
-      - name: Run contract-lifecycle test
-        run: python3 scripts/test_contracts.py
-
-      - name: Run Polis Bench test
-        run: python3 scripts/test_benchmark.py
-
-      - name: Run context-packet test
-        run: python3 scripts/test_context.py
-
-      - name: Run guardrails + learning-benchmark test
-        run: python3 scripts/test_guardrails.py
-
-      - name: Run packaging-data sync test
-        run: python3 scripts/test_packaging.py
-
-      - name: Run serve + report (Replay) test
-        run: python3 scripts/test_serve_report.py
-
-      - name: Run MCP server test
-        run: python3 scripts/test_mcp_server.py
-
-      - name: Run reflect (Layer 3 self-amendments) test
-        run: python3 scripts/test_reflect.py
-
-      - name: Run amendment lifecycle test
-        run: python3 scripts/test_amendments.py
-
-      - name: Run shipped examples validation test
-        run: python3 scripts/test_examples.py
-      - name: Run initializer dry-run test
-        run: python3 scripts/test_init_polis_dry_run.py
-
-      - name: Run python -m polis entry-point test
-        run: python3 scripts/test_module_main.py
-
-      - name: Run status JSON test
-        run: python3 scripts/test_status_json.py
+      # Every scripts/test_*.py is discovered and run here — a new suite needs
+      # no edit to this file. See scripts/run_tests.py; it prints a per-suite
+      # PASS/FAIL summary and annotates the failing file.
+      - name: Run Python regression suites (discovered from scripts/test_*.py)
+        run: python3 scripts/run_tests.py
 
       - name: Run extension thin-client state test (node)
         run: node editors/antigravity/test_state.js
