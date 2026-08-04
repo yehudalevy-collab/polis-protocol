@@ -19,7 +19,7 @@ commands:
   init        Scaffold or repair a _polis/ workspace and register an agent
   route       Recommend a citizen for an open contract (use --explain)
   reconcile   Rebuild routing_stats.yml from settled contracts
-  contract    Manage contracts: open | list | claim | settle | abandon | context
+  contract    Manage contracts: open | list | claim | settle | abandon | show | context
   bench       Polis Bench (--mode routing|learning): proof, measured honestly
   serve       Local control-plane dashboard — view + open/claim/settle/reserve (http://127.0.0.1:7341)
   mcp         Serve the polis lifecycle as an MCP server (stdio) for any agent
@@ -453,6 +453,20 @@ def cmd_contract(argv):
         print(f"{sub}: {a.contract_id} ok")
         return 0
 
+    if sub == "show":
+        ap = argparse.ArgumentParser(prog="polis contract show")
+        ap.add_argument("contract_id")
+        ap.add_argument("--polis-root", default=None)
+        a = ap.parse_args(rest)
+        root = _resolve_root(a.polis_root)
+        path, _state = contracts.find_contract(root, a.contract_id)
+        if not path:
+            print(f"show failed: contract not found: {a.contract_id}", file=sys.stderr)
+            return 1
+        print(path)
+        print(path.read_text(encoding="utf-8"), end="")
+        return 0
+
     if sub == "context":
         ap = argparse.ArgumentParser(prog="polis contract context")
         ap.add_argument("contract_id")
@@ -463,7 +477,7 @@ def cmd_contract(argv):
         print(context.format_packet(context.build_packet(root, a.contract_id)))
         return 0
 
-    print("usage: polis contract <open|list|claim|settle|abandon|context> [...]")
+    print("usage: polis contract <open|list|claim|settle|abandon|show|context> [...]")
     return 2
 
 

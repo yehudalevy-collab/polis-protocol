@@ -30,6 +30,20 @@ During development, you can run the CLI directly from the repository root:
 - Module fallback: `python -m polis` (useful for troubleshooting or without installing)
 - Exact entrypoint fallback: `python -m polis.cli`
 
+## Running the tests
+
+One command runs every Python regression suite, the same way CI does:
+
+```
+python3 scripts/run_tests.py
+```
+
+It discovers `scripts/test_*.py` from the filesystem, runs each in its own
+process, and prints a per-suite PASS/FAIL summary; it exits non-zero if any
+suite fails. **Adding a new `scripts/test_*.py` needs no workflow edit** — it is
+picked up automatically, so a new test can't quietly go un-run. (The Node
+editor test stays separate: `node editors/antigravity/test_state.js`.)
+
 ## Style
 
 - **Python**: stdlib first. `route_contract.py` is the only file that needs `PyYAML`. Keep it that way unless there's a compelling reason.
