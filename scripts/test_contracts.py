@@ -103,7 +103,10 @@ class ContractLifecycleTest(unittest.TestCase):
 class ContractShowTest(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
-        self.root = Path(self._tmp.name) / "_polis"
+        # .resolve() for the same reason as StatusJsonTest: `contract show`
+        # prints the resolved path, and on macOS the tempdir is under /var,
+        # a symlink to /private/var.
+        self.root = Path(self._tmp.name).resolve() / "_polis"
         self.root.mkdir(parents=True)
 
     def tearDown(self):
