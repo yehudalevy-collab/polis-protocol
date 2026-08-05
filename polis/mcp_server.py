@@ -372,13 +372,23 @@ def serve_stdio(polis_root):
     """Run the MCP server over stdio until EOF. stdout carries protocol only."""
     server = PolisMCPServer(polis_root)
     print(f"polis mcp — serving {server.root} over stdio", file=sys.stderr)
-    for line in sys.stdin:
-        line = line.strip()
-        if not line:
-            continue
+    # MCP's stdio transport is UTF-8 by specification, so decode stdin as
+    # bytes ourselves: decoding per the ambient locale crashes the loop on
+    # non-UTF-8-locale clients (issue #57). Decode STRICTLY — errors="replace"
+    # would rewrite bytes inside what may be a JSON string value, so the
+    # server would act on data the client never sent. A malformed sequence is
+    # a JSON-RPC parse error (-32700, id null — no request id is recoverable),
+    # reported without ever escaping the loop. A caller may have substituted
+    # a text stream without .buffer; those lines arrive already decoded.
+    byte_stream = getattr(sys.stdin, "buffer", sys.stdin)
+    for raw_line in byte_stream:
         try:
+            line = raw_line.decode("utf-8") if isinstance(raw_line, bytes) else raw_line
+            line = line.strip()
+            if not line:
+                continue
             msg = json.loads(line)
-        except json.JSONDecodeError:
+        except (UnicodeDecodeError, json.JSONDecodeError):
             resp = {"jsonrpc": "2.0", "id": None,
                     "error": {"code": -32700, "message": "parse error"}}
             sys.stdout.write(json.dumps(resp) + "\n")
