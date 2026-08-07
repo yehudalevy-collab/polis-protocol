@@ -11,7 +11,7 @@ from pathlib import Path
 
 from . import __version__
 
-USAGE = """polis {v} — local-first control plane for coding agents
+USAGE = """polis {v} - local-first control plane for coding agents
 
 usage: polis <command> [options]
 
@@ -21,7 +21,7 @@ commands:
   reconcile   Rebuild routing_stats.yml from settled contracts
   contract    Manage contracts: open | list | claim | settle | abandon | show | context
   bench       Polis Bench (--mode routing|learning): proof, measured honestly
-  serve       Local control-plane dashboard — view + open/claim/settle/reserve (http://127.0.0.1:7341)
+  serve       Local control-plane dashboard - view + open/claim/settle/reserve (http://127.0.0.1:7341)
   mcp         Serve the polis lifecycle as an MCP server (stdio) for any agent
   report      Write a shareable Polis Replay (--format md|html, --redact)
   reflect     Mine settled history for pathologies; draft evidence-backed amendments (--apply)
@@ -625,7 +625,29 @@ def _delegate(module_name, argv, prepend=None):
         sys.argv = saved
 
 
+def _soften_stream_encoding_errors():
+    """Degrade unencodable output characters instead of crashing on them.
+
+    When stdout/stderr is not UTF-8 — a POSIX/C locale, a Windows code page,
+    an explicit ``PYTHONIOENCODING=ascii``, some CI log capturers — printing a
+    character the stream cannot encode raises ``UnicodeEncodeError`` and the
+    command dies with a traceback. A replacement marker is always the better
+    outcome for a CLI, so ask both streams for ``errors="replace"`` up front.
+
+    ``reconfigure`` is a ``TextIOWrapper`` method (3.7+, so present on every
+    Python this project supports), but a caller may have swapped in a stream
+    object of its own — a ``StringIO`` in a test harness, say — that has no
+    such method. That is not an error: there is simply nothing to soften.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except AttributeError:
+            pass
+
+
 def main(argv=None):
+    _soften_stream_encoding_errors()
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv or argv[0] in ("-h", "--help", "help"):
         print(USAGE)
